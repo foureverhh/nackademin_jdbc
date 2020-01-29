@@ -80,21 +80,29 @@ public class Shop {
 
     static void showProductsInStore(){
         try {
-            rs = ConnectToMysqlDatabase.query("SELECT * From shoes", new Object[]{});
+            String sql = "SELECT shoes.color,shoes.size,shoes.brand,shoes.price,shoes.storage,categories.category From shoes " +
+                         "JOIN  ShoeCategoryDetails USING (shoe_id)"+
+                         "JOIN  Categories USING (category_id)";
+            rs = ConnectToMysqlDatabase.query(sql, new Object[]{});
             System.out.println("\nShoes in store:");
-            System.out.printf("%-10s%-10s%-10s%-10s%-10s\n","Color","Size","Brand","Price","Storage");
+            System.out.printf("%-10s%-10s%-10s%-10s%-10s%-10s\n","Color","Size","Brand","Price","Storage","Category");
             while (rs.next()){
-                System.out.printf("%-10s%-10s%-10s%-10d%-10d\n",
+                System.out.printf("%-10s%-10s%-10s%-10d%-10d%-10s\n",
+                        rs.getString(1),
                         rs.getString(2),
                         rs.getString(3),
-                        rs.getString(4),
                         rs.getInt("Price"),
-                        rs.getInt("Storage"));
+                        rs.getInt("Storage"),
+                        rs.getString("category"));
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    static void customerPlaceOrder(){
+
     }
 
 }
