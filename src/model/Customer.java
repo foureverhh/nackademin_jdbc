@@ -28,6 +28,10 @@ public class Customer {
         this.password = password;
     }
 
+    public String getName() {
+        return name;
+    }
+
     @Override
     public String toString() {
         return name + " " +password;
@@ -46,4 +50,6 @@ public class Customer {
     public int hashCode() {
         return Objects.hash(name, password);
     }
+
+
 }

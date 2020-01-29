@@ -5,25 +5,31 @@ import model.Customer;
 import model.CustomerDaoImpl;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
 public class Shop {
+    private static int uid;
     static Map<Integer,Customer> customerList;
     static Connection conn = null;
     static PreparedStatement ps = null;
     static CallableStatement cs = null;
     static ResultSet rs = null;
+    static Customer customer;
+
     static {
         conn = ConnectToMysqlDatabase.getConnection();
         customerList = new CustomerDaoImpl().getAll();
     }
     public static void main(String[] args) {
         /*login*/
-        //login();
+        login();
         /*Show storage*/
         showProductsInStore();
+        /*show customers order*/
+        showAllOrders();
 
 
 
@@ -68,9 +74,13 @@ public class Shop {
                     System.out.println("please input a number");
                 }
             }
-            Customer customer = new Customer(name, password);
+             customer = new Customer(name, password);
             if (customerList.containsValue(customer)) {
                 System.out.println("Welcome " + name);
+                for (Map.Entry<Integer,Customer> entry : customerList.entrySet()) {
+                    if(entry.getValue().equals(customer))
+                        uid = entry.getKey();
+                }
                 break;
             } else {
                 System.out.println("name or password is wrong try again please");
@@ -101,7 +111,58 @@ public class Shop {
         }
     }
 
-    static void customerPlaceOrder(){
+    /*static void customerPlaceOrder(){
+        try {
+            cs = conn.prepareCall("{call AddTOCart(?,?,?)}");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }*/
+
+    static void showAllOrders(){
+        String sql = "SELECT DATE_FORMAT (Orders.Order_date,'%Y%m%d'), "+
+                "shoes.color,shoes.size,shoes.brand,shoes.price,categories.category,OrderDetails.Shoe_quantity "+
+                "FROM Customers " +
+                "JOIN Orders ON Customers.Customer_Id = Orders.Customer " +
+                "JOIN OrderDetails USING (Order_id) " +
+                "JOIN Shoes USING (Shoe_id) " +
+                "JOIN ShoeCategoryDetails USING (Shoe_id) " +
+                "JOIN Categories USING (Category_id) " +
+                "Where Customers.Customer_Id = " + uid + ";";
+        try {
+            rs = ConnectToMysqlDatabase.query(sql,new Object[]{});
+            /*String name = null;*/
+            List<String> orders = new ArrayList<>();
+            while (rs.next()) {
+                StringBuilder sb = new StringBuilder();
+           /*     String firstName = rs.getString(1);
+                String lastName = rs.getString(2);*/
+                /*name = firstName + " " + lastName;*/
+                String date = rs.getString(1);
+                sb.append(date).append(" ");
+                String color = rs.getString(2);
+                sb.append(color).append(" ");
+                String size = rs.getString(3);
+                sb.append(size).append(" ");
+                String brand = rs.getString(4);
+                sb.append(brand).append(" ");
+                int price = rs.getInt(5);
+                sb.append(price).append(" ");
+                String category = rs.getString(6);
+                sb.append(category).append(" ");
+                int quantity = rs.getInt(7);
+                sb.append(quantity);
+                orders.add(sb.toString());
+            }
+            System.out.println("Dear " + customer.getName() + ", you have ordered: " );
+            for(String order : orders){
+                System.out.println(order);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
     }
 
