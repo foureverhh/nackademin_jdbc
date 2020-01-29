@@ -1,13 +1,12 @@
 package model;
 
 import Util.ConnectToMysqlDatabase;
-import com.mysql.cj.protocol.Resultset;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-public class CustomerDaoImpl implements CustomerDao{
+public class CustomerDaoImpl implements Dao {
 
     @Override
     public Map<Integer,Customer> getAll() {

@@ -48,7 +48,7 @@ public class ConnectToMysqlDatabase {
         }
     }
 
-    public static void close(ResultSet rs, PreparedStatement ps, CallableStatement cs,Connection conn){
+    public static void close(ResultSet rs, CallableStatement cs,Connection conn){
         if(rs != null){
             try {
                 rs.close();
@@ -56,13 +56,7 @@ public class ConnectToMysqlDatabase {
                 e.printStackTrace();
             }
         }
-        if(ps != null){
-            try {
-                ps.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+
         if(cs != null){
             try {
                 cs.close();

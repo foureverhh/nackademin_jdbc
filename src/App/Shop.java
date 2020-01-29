@@ -4,29 +4,26 @@ import Util.ConnectToMysqlDatabase;
 import model.Customer;
 import model.CustomerDaoImpl;
 import model.Shoe;
+import model.ShoeDaoImpl;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class Shop {
     private static int uid;
     private static int shoeId;
-    private static Map<Integer,Customer> customerList;
+    private static Map<Integer,Customer> customerMap;
     private static Connection conn;
-    private static PreparedStatement ps;
     private static CallableStatement cs;
     private static ResultSet rs = null;
     private static Customer customer;
     private static Scanner scanner;
-    private static List<Shoe> shoesInStore = new ArrayList<>();
-
+    private static Map<Integer,Shoe> shoesInStore;
 
     static {
         conn = ConnectToMysqlDatabase.getConnection();
-        customerList = new CustomerDaoImpl().getAll();
+        customerMap = new CustomerDaoImpl().getAll();
+        shoesInStore = new ShoeDaoImpl().getAll();
         scanner = new Scanner(System.in);
     }
     public static void main(String[] args) {
@@ -47,13 +44,16 @@ public class Shop {
         while(true) {
             String name = null;
             int password = 0;
-            System.out.println("Input your name please");
-            /*scanner = new Scanner(System.in);*/
+            System.out.println("Input your name please (Macus Smith " +
+                    "/ Jim King " +
+                    "/ Kim Ericsson " +
+                    "/ John Ken" +
+                    "/ Mike Fisherman)");
             String temp = null;
             if ((temp = scanner.nextLine()) != null) {
                 name = temp.trim();
             }
-            System.out.println("Input your password please");
+            System.out.println("Input your password please( 123 / 345 / 456 / 678 / 890)");
             while (true) {
                 try {
                     if ((temp = scanner.nextLine()) != null) {
@@ -65,9 +65,9 @@ public class Shop {
                 }
             }
              customer = new Customer(name, password);
-            if (customerList.containsValue(customer)) {
+            if (customerMap.containsValue(customer)) {
                 System.out.println("Welcome " + name);
-                for (Map.Entry<Integer,Customer> entry : customerList.entrySet()) {
+                for (Map.Entry<Integer,Customer> entry : customerMap.entrySet()) {
                     if(entry.getValue().equals(customer))
                         uid = entry.getKey();
                 }
@@ -81,27 +81,20 @@ public class Shop {
     /*show storage*/
     static void showProductsInStore(){
         try {
-            String sql = "SELECT shoes.color,shoes.size,shoes.brand,shoes.price,shoes.storage From shoes " +
+            String sql = "SELECT shoes.color,shoes.size,shoes.brand,shoes.price,shoes.storage,Categories.category From shoes " +
                          "JOIN  ShoeCategoryDetails USING (shoe_id)"+
                          "JOIN  Categories USING (category_id);";
             rs = ConnectToMysqlDatabase.query(sql, new Object[]{});
             System.out.println("\nShoes in store:");
             System.out.printf("%-10s%-10s%-10s%-10s%-10s%-10s\n","Color","Size","Brand","Price","Storage","Category");
             while (rs.next()){
-                String color = rs.getString(1);
-                String size = rs.getString(2);
-                String brand = rs.getString(3);
-                int price = rs.getInt("Price");
-                int storage  = rs.getInt("Storage");
-                String category = rs.getString("category");
                 System.out.printf("%-10s%-10s%-10s%-10d%-10d%-10s\n",
-                        color,
-                        size,
-                        brand,
-                        price,
-                        storage,
-                        category);
-                shoesInStore.add(new Shoe(color,size,brand,price,category,storage));
+                        rs.getString(1),
+                        rs.getString(2),
+                        rs.getString(3),
+                        rs.getInt("Price"),
+                        rs.getInt("Storage"),
+                        rs.getString("category"));
             }
 
         } catch (SQLException e) {
@@ -125,27 +118,32 @@ public class Shop {
     }
     /*Get requires from customer*/
     static Shoe getRequireShoeFromCustomer(){
-        System.out.println("Choose the color");
+        System.out.println("\nChoose the color");
         String color = verifyInput();
         System.out.println("Choose the size");
-        String size = verifyInput();;
+        String size = verifyInput();
         System.out.println("Choose the brand");
         String brand = verifyInput();
         System.out.println("Choose the price");
-        int price = Integer.parseInt(verifyInput());
-        System.out.println("Choose the category");
-        String category = verifyInput();
-        return new Shoe(color,size,brand,price,category);
+        int price = 0;
+        while (true) {
+            try {
+                price = Integer.parseInt(verifyInput());
+                break;
+            } catch (Exception e) {
+                System.out.println("Only integer is accepted!");
+            }
+        }
+        return new Shoe(color,size,brand,price);
     }
 
     /*Add new order*/
     static void addToCart(){
         Shoe customerChoice = getRequireShoeFromCustomer();
-        for (int i = 0; i < shoesInStore.size(); i++) {
-            if(customerChoice.equals(shoesInStore.get(i))){
-                shoeId = i+1;
-                System.out.println(shoeId);
-                customerChoice = shoesInStore.get(i);
+        for(Map.Entry<Integer,Shoe> entry : shoesInStore.entrySet()){
+            if(entry.getValue().equals(customerChoice)){
+                shoeId = entry.getKey();
+                customerChoice = entry.getValue();
                 break;
             }
         }
@@ -158,6 +156,7 @@ public class Shop {
                 cs.setObject(2, null);
                 cs.setInt(3, shoeId);
                 cs.executeQuery();
+                System.out.println("Thanks for ordering a pair of" + customerChoice);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -166,38 +165,23 @@ public class Shop {
     /*Show all */
     static void showAllOrders(){
         String sql = "SELECT DATE_FORMAT (Orders.Order_date,'%Y%m%d'), "+
-                "categories.category,shoes.color,shoes.size,shoes.brand,shoes.price,OrderDetails.Shoe_quantity "+
+                "shoes.color,shoes.size,shoes.brand,shoes.price,OrderDetails.Shoe_quantity "+
                 "FROM Customers " +
                 "JOIN Orders ON Customers.Customer_Id = Orders.Customer " +
                 "JOIN OrderDetails USING (Order_id) " +
                 "JOIN Shoes USING (Shoe_id) " +
-                "JOIN ShoeCategoryDetails USING (Shoe_id) " +
-                "JOIN Categories USING (Category_id) " +
                 "Where Customers.Customer_Id = " + uid + ";";
         try {
             rs = ConnectToMysqlDatabase.query(sql,new Object[]{});
-            List<String> orders = new ArrayList<>();
-            while (rs.next()) {
-                StringBuilder sb = new StringBuilder();
-                String category = rs.getString(1);
-                sb.append(category).append(" ");
-                String date = rs.getString(2);
-                sb.append(date).append(" ");
-                String color = rs.getString(3);
-                sb.append(color).append(" ");
-                String size = rs.getString(4);
-                sb.append(size).append(" ");
-                String brand = rs.getString(5);
-                sb.append(brand).append(" ");
-                int price = rs.getInt(6);
-                sb.append(price).append(" ");
-                int quantity = rs.getInt(7);
-                sb.append(quantity);
-                orders.add(sb.toString());
-            }
             System.out.println("\nDear " + customer.getName() + ", you have ordered: " );
-            for(String order : orders){
-                System.out.println(order);
+            while (rs.next()) {
+                String date = rs.getString(1);
+                String color = rs.getString(2);
+                String size = rs.getString(3);
+                String brand = rs.getString(4);
+                int price = rs.getInt(5);
+                int quantity = rs.getInt(6);
+                System.out.println(date + " " + new Shoe(color,size,brand,price) + " " + quantity);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -205,7 +189,7 @@ public class Shop {
     }
 
     static void shutdown(){
-        ConnectToMysqlDatabase.close(rs,ps,cs,conn);
+        ConnectToMysqlDatabase.close(rs,cs,conn);
         System.exit(0);
     }
 
@@ -213,7 +197,6 @@ public class Shop {
         System.out.println("\nDo you want to buy more? (Y/N)");
         boolean buyMore = true;
         while(buyMore) {
-            /*scanner = new Scanner(System.in);*/
             String input = scanner.nextLine();
             if (input.equalsIgnoreCase("y")) {
                 addToCart();

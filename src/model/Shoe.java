@@ -7,19 +7,17 @@ public class Shoe {
     private String size;
     private String brand;
     private int price;
-    private String category;
     private int storage;
 
-    public Shoe(String color, String size, String brand, int price, String category) {
+    public Shoe(String color, String size, String brand, int price) {
         this.color = color;
         this.size = size;
         this.brand = brand;
         this.price = price;
-        this.category = category;
     }
 
-    public Shoe(String color, String size, String brand, int price, String category, int storage) {
-        this(color,size,brand,price,category);
+    public Shoe(String color, String size, String brand, int price, int storage) {
+        this(color,size,brand,price);
         this.storage = storage;
     }
 
@@ -39,10 +37,6 @@ public class Shoe {
         return price;
     }
 
-    public String getCategory() {
-        return category;
-    }
-
     public int getStorage() {
         return storage;
     }
@@ -55,12 +49,16 @@ public class Shoe {
         return price == shoe.price &&
                 Objects.equals(color, shoe.color) &&
                 Objects.equals(size, shoe.size) &&
-                Objects.equals(brand, shoe.brand) &&
-                Objects.equals(category, shoe.category);
+                Objects.equals(brand, shoe.brand);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(color, size, brand, price, category);
+        return Objects.hash(color, size, brand, price);
+    }
+
+    @Override
+    public String toString() {
+        return  " " +color + " " + size + " " + brand + " " + price ;
     }
 }
